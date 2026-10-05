@@ -1,0 +1,30 @@
+# Build output
+target/
+*.class
+*.jar
+!**/src/**/*.jar
+maven-archiver/
+dependency-reduced-pom.xml
+
+# Libraries staged into a sketch's code/ folder by `mvn package`.
+# These are build outputs, not sources: `mvn package` recreates them from the
+# versions pinned in pom.xml.
+CustomSearchJSON/code/
+
+# Processing IDE
+*.apk
+processing/
+*.properties.bak
+
+# Editor and OS noise
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local configuration and secrets
+.env
+.env.local
+*.local

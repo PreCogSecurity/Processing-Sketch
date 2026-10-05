@@ -1,0 +1,104 @@
+name: CI
+
+# Verifies the repository from a clean checkout on every push and pull request.
+# Nothing here needs a display, an API credential or a hardware device: the
+# build target is the plain-Java core, and the Processing sketches are compiled
+# by the IDE rather than by Maven.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+# A superseded run on the same ref cancels the running one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, test and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          # Full history so the secret scan below can see every commit.
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      # Pinned so a rerun resolves byte-identical artifacts. The pom pins every
+      # dependency and plugin version on top of this.
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: 3.9.9
+
+      # validate (enforcer) -> compile -> test -> verify (checkstyle)
+      - name: Build, test and lint
+        run: mvn -B -ntp verify
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: core/target/surefire-reports/
+          if-no-files-found: ignore
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # This repository previously shipped a live Google API key inside a
+      # commented-out URL. Deleting the line does not un-leak the key, and the
+      # key is still in the git history, so the gate below covers the working
+      # tree on every push and the history is reported alongside it.
+      #
+      # HIGH-CONFIDENCE CREDENTIAL PATTERNS ONLY. A general-purpose scanner such
+      # as gitleaks or trufflehog is a better fit, but both are either
+      # licence-gated for commercial use or need a pinned binary plus checksum.
+      # Wire one in here once the historical key has been rotated; see
+      # SECURITY.md.
+      - name: Fail if a credential is present in the working tree
+        run: |
+          set -euo pipefail
+          pattern='(AIza[0-9A-Za-z_-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)'
+          if git grep -nIE "$pattern" -- . ; then
+            echo "::error::A credential-shaped string is committed. Revoke it, then remove it."
+            exit 1
+          fi
+          echo "No credential-shaped strings in the working tree."
+
+      - name: Report credential patterns in history
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          pattern='(AIza[0-9A-Za-z_-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)'
+          found=0
+          for commit in $(git rev-list --all); do
+            if git grep -IlE "$pattern" "$commit" -- . >/dev/null 2>&1; then
+              echo "::warning::Credential-shaped string in commit $commit"
+              git grep -InE "$pattern" "$commit" -- . | cut -c1-160 || true
+              found=$((found + 1))
+            fi
+          done
+          echo "Commits containing a credential-shaped string: $found (known: 1, see SECURITY.md)"

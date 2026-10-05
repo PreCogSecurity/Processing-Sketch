@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.precog.security</groupId>
+    <artifactId>processing-sketch-parent</artifactId>
+    <version>1.0.0</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>processing-sketch-core</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Processing-Sketch :: core</name>
+  <description>
+    Security-relevant logic extracted from the Processing sketches, written as
+    plain Java so it can be unit tested without a graphics context. The
+    CustomSearchJSON sketch calls into this jar; the Processing IDE picks it up
+    automatically from that sketch's code/ folder.
+  </description>
+
+  <dependencies>
+    <!--
+      Declared so the version is pinned in exactly one place and so the
+      `package` phase can stage it into CustomSearchJSON/code/ alongside this
+      module's jar. The core library itself does not call Gson; the sketch uses
+      it to deserialise the search response. Optional keeps it out of any
+      downstream consumer's classpath.
+    -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-build-environment</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                  <message>
+                    Processing 4.x requires Java 17 or newer. Install a JDK 17+
+                    distribution and point JAVA_HOME at it.
+                  </message>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.8.6,)</version>
+                  <message>
+                    Use Maven 3.8.6 or newer. CI pins the exact version it uses.
+                  </message>
+                </requireMavenVersion>
+                <!--
+                  Fails the build if a transitive dependency ever outranks the
+                  version pinned here. This is what substitutes for a lockfile
+                  in a Maven build: the resolved tree must match the declared
+                  one exactly, or the build stops.
+                -->
+                <requireUpperBoundDeps/>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>check-style</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <!--
+            Processing resolves a sketch's libraries from <sketch>/code/. Writing
+            the jar straight there means one `mvn package` from a fresh clone
+            leaves the sketch ready to open in the IDE.
+          -->
+          <outputDirectory>${project.basedir}/../CustomSearchJSON/code</outputDirectory>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>stage-sketch-libraries</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeScope>runtime</includeScope>
+              <overWriteReleases>true</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+              <outputDirectory>${project.basedir}/../CustomSearchJSON/code</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
