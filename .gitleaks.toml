@@ -1,0 +1,36 @@
+# Gitleaks configuration.
+#
+# Default rules are extended, not replaced, so a newly introduced credential of
+# any recognised type fails CI.
+[extend]
+useDefault = true
+
+title = "Processing-Sketch secret scanning"
+
+# ---------------------------------------------------------------------------
+# Known, accepted historical finding.
+#
+# CustomSearchJSON/Search.pde contained a live Google Custom Search API key in a
+# commented-out URL. It was committed in 248fda5 (2015-06-23) and is therefore
+# in the git history permanently. The literal has been removed from the working
+# tree and the key is now read from GOOGLE_CUSTOM_SEARCH_API_KEY.
+#
+# This allowlist exists ONLY so that the history scan can go green and keep
+# guarding everything else. It does not make the exposure acceptable:
+#
+#   * the key must be REVOKED. That is a human action in the Google Cloud
+#     console; see SECURITY.md. Removing a string from a file does not
+#     invalidate a credential.
+#   * the owner may additionally scrub the blob from history with
+#     `git filter-repo --sensitive-data-removal --invert-paths`, then drop this
+#     allowlist.
+#
+# Do not widen this allowlist to new commits. If secret scanning flags
+# something new, the finding is real: rotate the credential and do not suppress
+# it.
+# ---------------------------------------------------------------------------
+[[allowlists]]
+description = "Historical Google Custom Search API key leak, tracked in SECURITY.md"
+commits = [
+  "248fda5007786f1a291adf8af3504e32dc0f1627",
+]

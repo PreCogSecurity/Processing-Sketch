@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  Checkstyle configuration for the Processing-Sketch core library.
+
+  Scope of the gate: `core/src/main/java` only (the core pom sets
+  includeTestSourceDirectory=false). The .pde sketches are Processing sources
+  and are not compiled by Maven, so they are outside what this linter can see.
+
+  Deliberately omitted, and why:
+    - SingleLineJavadoc, JavadocParagraph, SummaryJavadoc: these enforce
+      formatting opinions rather than correctness and produce noisy diffs on
+      otherwise good documentation.
+    - MagicNumber: meaningless in numeric and geometry code.
+    - IllegalCatch: closeQuietly() has to catch Exception by contract.
+    - FinalLocalVariable / FinalParameters: churn without defect prevention.
+-->
+<module name="Checker">
+
+  <property name="charset" value="UTF-8"/>
+  <property name="severity" value="warning"/>
+  <property name="fileExtensions" value="java"/>
+
+  <module name="NewlineAtEndOfFile"/>
+  <module name="FileTabCharacter"/>
+
+  <module name="LineLength">
+    <property name="max" value="120"/>
+    <property name="ignorePattern" value="^package.*|^import.*|^\s*\*.*https?://"/>
+  </module>
+
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$"/>
+    <property name="message" value="Trailing whitespace."/>
+  </module>
+
+  <module name="TreeWalker">
+
+    <!-- Imports: explicit and used. A wildcard import hides where a type came from. -->
+    <module name="AvoidStarImport"/>
+    <module name="RedundantImport"/>
+    <module name="UnusedImports"/>
+    <module name="IllegalImport"/>
+
+    <!-- Naming -->
+    <module name="PackageName"/>
+    <module name="TypeName"/>
+    <module name="MethodName"/>
+    <module name="LocalVariableName"/>
+    <module name="MemberName"/>
+    <module name="ParameterName"/>
+    <module name="ConstantName"/>
+    <module name="StaticVariableName"/>
+
+    <!-- Blocks and braces: every branch states its intent. -->
+    <module name="NeedBraces"/>
+    <module name="LeftCurly"/>
+    <module name="RightCurly">
+      <property name="option" value="same"/>
+    </module>
+    <!-- option=text allows an empty block that is only a comment, which is how a
+         deliberate no-op catch block stays self-explanatory. -->
+    <module name="EmptyBlock">
+      <property name="option" value="text"/>
+    </module>
+
+    <!-- Whitespace and wrapping -->
+    <module name="WhitespaceAfter"/>
+    <module name="WhitespaceAround">
+      <property name="allowEmptyConstructors" value="true"/>
+      <property name="allowEmptyMethods" value="true"/>
+      <property name="allowEmptyTypes" value="true"/>
+      <property name="allowEmptyLambdas" value="true"/>
+    </module>
+    <module name="NoWhitespaceBefore"/>
+    <module name="GenericWhitespace"/>
+    <module name="MethodParamPad"/>
+    <module name="ParenPad"/>
+    <module name="OperatorWrap">
+      <property name="option" value="nl"/>
+    </module>
+    <module name="SeparatorWrap">
+      <property name="tokens" value="DOT"/>
+      <property name="option" value="nl"/>
+    </module>
+    <module name="Indentation">
+      <property name="basicOffset" value="4"/>
+      <property name="lineWrappingIndentation" value="8"/>
+      <property name="forceStrictCondition" value="false"/>
+    </module>
+
+    <!-- Modifiers and declarations -->
+    <module name="ModifierOrder"/>
+    <module name="RedundantModifier"/>
+    <module name="FinalClass"/>
+    <module name="HideUtilityClassConstructor"/>
+    <module name="InterfaceIsType"/>
+    <module name="OneTopLevelClass"/>
+    <module name="OneStatementPerLine"/>
+    <module name="MultipleVariableDeclarations"/>
+    <module name="ArrayTypeStyle"/>
+    <module name="UpperEll"/>
+    <module name="DefaultComesLast"/>
+
+    <!-- Correctness -->
+    <module name="EqualsHashCode"/>
+    <module name="CovariantEquals"/>
+    <module name="StringLiteralEquality"/>
+    <module name="FallThrough"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="UnusedLocalVariable"/>
+    <module name="EmptyStatement"/>
+
+    <!-- Documentation: substantial public API carries a comment. -->
+    <module name="MissingJavadocMethod">
+      <property name="scope" value="public"/>
+      <property name="minLineCount" value="4"/>
+      <property name="allowMissingPropertyJavadoc" value="true"/>
+      <property name="allowedAnnotations" value="Override"/>
+    </module>
+    <module name="NonEmptyAtclauseDescription"/>
+    <module name="JavadocStyle">
+      <property name="checkFirstSentence" value="false"/>
+      <property name="checkEmptyJavadoc" value="true"/>
+      <property name="checkHtml" value="false"/>
+    </module>
+
+  </module>
+</module>
